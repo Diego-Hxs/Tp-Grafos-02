@@ -16,7 +16,8 @@ public final class Main {
             System.out.println("2. Solucao exata (Branch and Bound)");
             System.out.println("3. Testes de tabela");
             System.out.println("4. Listar instancias");
-            System.out.println("0. Sair");
+            System.out.println("5. Solucao exata (40 instancias)");
+			System.out.println("0. Sair");
             System.out.print("> ");
 
             String linha = sc.nextLine().trim();
@@ -32,6 +33,12 @@ public final class Main {
                 }
                 case "3" -> Testes.main(new String[]{});
                 case "4" -> Principal.main(new String[]{"lista"});
+				case "5" -> {
+    				System.out.print("Timeout em segundos por instancia [60]: ");
+    				String tempo = sc.nextLine().trim();
+    				String s = tempo.isEmpty() ? "60" : tempo;
+   					Principal.main(new String[]{"exata_todas", s});
+				}
                 case "0" -> { return; }
                 default -> System.out.println("Opcao invalida.");
             }

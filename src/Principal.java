@@ -6,7 +6,7 @@ import java.util.Locale;
 
 public final class Principal {
 
-    private static final String PASTA = "instancias";
+    private static final String PASTA = "../instancias";
 
     private static final int[] RAIO_OTIMO = {
         127, 98, 93, 74, 48,
@@ -25,7 +25,8 @@ public final class Principal {
         switch (modo) {
             case "aprox" -> aproximado();
             case "exata" -> exata(Integer.parseInt(args[1]), args.length > 2 ? Integer.parseInt(args[2]) : 60);
-            case "lista" -> lista();
+            case "exata_todas" -> exataTodas(args.length > 1 ? Integer.parseInt(args[1]) : 60);
+			case "lista" -> lista();
             default -> System.out.println("uso: aprox | exata <i> [segundos] | lista");
         }
     }
@@ -105,6 +106,49 @@ public final class Principal {
                     i + 1, r.centros[i] + 1, grupos.get(i).size());
         }
     }
+
+	private static void exataTodas(int segundos) throws IOException {
+
+		System.out.printf("%-10s %5s %5s %10s %10s %10s %12s %15s %10s%n",
+        "instancia", "n", "k",
+        "exata", "otimo", "gap(%)",
+        "tempo(s)", "nos", "status");
+
+		System.out.println("-".repeat(110));
+
+		StringBuilder csv = new StringBuilder(
+        	"instancia,n,k,raio_exata,raio_otimo,gap_percentual,tempo_s,nos,status\n");
+
+		for (int i = 1; i <= 40; i++) {
+
+    		String nome = String.format("pmed%02d", i);
+
+    		Grafo g = LeitorPmed.ler(Path.of(PASTA, nome + ".txt").toString());
+    		Gonzalez.Resultado guloso = Gonzalez.resolver(g);
+    		int[][] dist = Distancias.matriz(g);
+   			Exata solver = new Exata(dist, g.k);
+    		Exata.Resultado r = solver.resolver(guloso.centros, guloso.raio, segundos);
+    		int otimo = RAIO_OTIMO[i - 1];
+			double gap = 100.0 * (r.raio - otimo) / otimo;
+    		double tempo = r.tempoNanos / 1_000_000_000.0;
+    		String status;
+    		if (r.timeout) status = "TIMEOUT";
+    		else if (r.raio == otimo) status = "OTIMO";
+    		else status = "DIVERGE";
+    		System.out.printf(Locale.ROOT,
+            "%-10s %5d %5d %10d %10d %10.2f %12.3f %15d %10s%n",
+            nome, g.n, g.k, r.raio, otimo, gap, tempo, r.nos, status);
+    		csv.append(
+            String.format(Locale.ROOT,
+            "%s,%d,%d,%d,%d,%.2f,%.3f,%d,%s%n",
+            nome, g.n, g.k, r.raio, otimo, gap, tempo, r.nos, status));
+		}
+		try (PrintWriter pw = new PrintWriter("resultados_exata.csv")) {
+    		pw.print(csv);
+		}
+		System.out.println();
+		System.out.println("resultados salvos em: resultados_exata.csv");
+	}
 
     private static void lista() throws IOException {
         System.out.printf("%-10s %5s %5s %10s%n", "instancia", "n", "k", "otimo");
